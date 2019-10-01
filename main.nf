@@ -11,7 +11,7 @@ process runSeqyclean {
 
     storeDir resultsDir+'/cleanedreads'
 	stageInMode = 'copy'
-	maxForks = 2
+	maxForks = 7
 
 	input:
 	set id, file(fastq_names) from readsQueue
