@@ -1,0 +1,77 @@
+#!/usr/bin/env nextflow
+
+readsQueue = Channel.fromFilePairs( ['./*_L001_R{1,2}_001.fastq.gz','./*_{1,2}.fastq','./*_{1,2}.fastq.gz'] )
+
+cpus = 8
+memory = 15
+
+resultsDir=workflow.launchDir+"/results"
+
+process runSeqyclean {
+
+    storeDir resultsDir+'/cleanedreads'
+	stageInMode = 'copy'
+	maxForks = 2
+
+	input:
+	set id, file(fastq_names) from readsQueue
+
+	output:
+	set val(id), file("${id}_clean_PE1.fastq.gz"), file("${id}_clean_PE2.fastq.gz") into cleanreadsQueue
+
+	"""
+    seqyclean -gz -minlen 25 -qual -c /Adapters_plus_PhiX_174.fasta -1 ${fastq_names[0]} -2 ${fastq_names[1]} -o ${id}_clean
+	"""
+}
+
+process runShovill {
+
+    storeDir resultsDir+'/shovill'
+	stageInMode = 'copy'
+	maxForks = 1
+
+	input:
+	set id, file(R1), file(R2) from cleanreadsQueue
+
+	output:
+	set val(id), file("${id}.fasta") into quastQueue, legstaQueue
+
+	"""
+    shovill --outdir . --force --cpus ${cpus} --ram ${memory} --gsize 3400000 --R1 ${R1} --R2 ${R2};
+    mv contigs.fa ${id}.fasta
+	"""
+}
+
+process runQuast {
+
+    storeDir resultsDir+'/quast'
+	stageInMode = 'copy'
+
+	input:
+	file assemblies from quastQueue.collect()
+
+	output:
+	file "report.tsv" into quastResults
+	file "report.html" into quastReports
+
+	"""
+	quast.py -o . -t ${cpus} ${assemblies}
+	"""
+}
+
+process runLegsta {
+
+    storeDir resultsDir
+	stageInMode = 'copy'
+
+	input:
+	file assemblies from legstaQueue.collect()
+
+	output:
+	file "legsta_results.tsv" into legstaResults
+
+	"""
+	legsta *.fasta > legsta_results.tsv
+	"""
+}
+
