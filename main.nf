@@ -38,7 +38,7 @@ process runShovill {
 	set val(id), file("${id}.fasta") into quastQueue, legstaQueue
 
 	"""
-    shovill --outdir . --force --cpus ${cpus} --ram ${memory} --gsize 3400000 --R1 ${R1} --R2 ${R2};
+    shovill --outdir . --force --cpus ${params.cpus} --ram ${params.memory} --gsize 3400000 --R1 ${R1} --R2 ${R2};
     mv contigs.fa ${id}.fasta
 	"""
 }
@@ -56,7 +56,7 @@ process runQuast {
 	file "report.html" into quastReports
 
 	"""
-	quast.py -o . -t ${cpus} ${assemblies}
+	quast.py -o . -t ${params.cpus} ${assemblies}
 	"""
 }
 
