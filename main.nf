@@ -2,8 +2,9 @@
 
 readsQueue = Channel.fromFilePairs( ['./*_L001_R{1,2}_001.fastq.gz','./*_{1,2}.fastq','./*_{1,2}.fastq.gz'] )
 
-cpus = 8
-memory = 15
+params.cpus = 8
+params.memory = 15
+seqycleanforks = params.cpus - 1
 
 resultsDir=workflow.launchDir+"/results"
 
@@ -11,7 +12,7 @@ process runSeqyclean {
 
     storeDir resultsDir+'/cleanedreads'
 	stageInMode = 'copy'
-	maxForks = 7
+	maxForks = seqycleanforks
 
 	input:
 	set id, file(fastq_names) from readsQueue
